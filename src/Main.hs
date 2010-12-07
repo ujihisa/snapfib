@@ -9,7 +9,13 @@ import           Text.Templating.Heist.TemplateDirectory
 
 import           Glue
 import           Server
+import           Data.ByteString.Char8 (pack, unpack)
 
+fibs :: [Integer]
+fibs = 0 : 1 : zipWith (+) fibs (tail fibs)
+
+fibInString :: Int -> String
+fibInString n = "fib(" ++ show n ++ ") = " ++ show (fibs !! n)
 
 main :: IO ()
 main = do
@@ -17,14 +23,14 @@ main = do
     quickServer $ templateHandler td defaultReloadHandler $ \ts ->
         ifTop (writeBS "hello world") <|>
         route [ ("foo", writeBS "bar")
-              , ("echo/:echoparam", echoHandler)
+              , ("fib/:n", fibHandler)
               ] <|>
         templateServe ts <|>
         dir "static" (fileServe ".")
 
 
-echoHandler :: Snap ()
-echoHandler = do
-    param <- getParam "echoparam"
-    maybe (writeBS "must specify echo/param in URL")
-          writeBS param
+fibHandler :: Snap ()
+fibHandler = do
+    param <- getParam "n"
+    maybe (writeBS "must specify fib/n in URL")
+          (writeBS . pack . fibInString . read . unpack) param
